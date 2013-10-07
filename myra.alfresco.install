@@ -1,0 +1,68 @@
+#!/bin/bash
+# -----------------------------------------------------------------
+# MyRA Alfresco Install File
+#
+# Installs the Alfresco instance of MyRA and enables all
+# required modules and configures those modules settings
+#
+# (c) 2008-2010 MyRA Project, Health Sciences IT, University of Utah
+# Contact: Dr. Scott Narus <scott.narus@hsc.utah.edu>
+# Biomedical Informatics, 26 South 2000 East
+# Room 5775 HSEB, Salt Lake City, UT 84112
+# Day Phone: 1-801-213-3288
+#
+# @author     N. Dustin Schultz <dustin.schultz@utah.edu>
+# @version    Apr 15, 2011
+#
+# ------------------------------------------------------------------
+
+# Ensure JAVA_HOME is set
+if [ "x$JAVA_HOME" = "x" ]; then
+    echo "JAVA_HOME is required but not set.  Aborting."
+    exit 1;
+fi
+
+# Ensure Wget is installed
+type -P wget &>/dev/null || { echo "Wget is required but it's not installed.  Aborting." >&2; exit 1; }
+
+# Ensure Git is installed
+#type -P git &>/dev/null || { echo "Git is required but it's not installed.  Aborting." >&2; exit 1; }
+
+# Ensure Maven is installed
+type -P mvn &>/dev/null || { echo "Maven is required but it's not installed.  Aborting." >&2; exit 1; }
+
+# Ensure Maven Settings are configured
+#if [ ! -f ~/.m2/settings.xml ]; then
+#    echo "Maven settings.xml required, please download from http://dev-tools.further.utah.edu/nexus/service/local/templates/settings/default/content.  Aborting." >&2; exit 1;
+#fi
+
+ALFRESCO_INSTALLER="alfresco-community-3.4.d-installer-linux-x64.bin"
+
+if [ ! -e "alfresco.bin" ]; then
+	wget -O alfresco.bin http://dl.alfresco.com/release/community/build-3370/$ALFRESCO_INSTALLER
+	chmod +x alfresco.bin
+fi
+
+alf_location="$PWD/alfresco"
+read -p "Where would you like to install Alfresco? Please use a full path. [$alf_location]: " input
+alf_location="${input:-$alf_location}"
+
+# Execute the Alfresco installer
+./alfresco.bin \
+	--mode text \
+	--installer-language en \
+	--prefix $alf_location
+	
+rm -rf $alf_location/java
+ln -s $JAVA_HOME $alf_location/java
+
+# Build our custom integrations
+cd myra-alfresco
+mvn clean install
+
+# Overwrite the Alfresco WAR with our custom one
+mv alfresco-explorer/target/alfresco.war $alf_location/tomcat/webapps
+
+# Apply the AMPS to our custom WAR
+cd $alf_location
+java -jar bin/alfresco-mmt.jar install amps tomcat/webapps/alfresco.war -directory

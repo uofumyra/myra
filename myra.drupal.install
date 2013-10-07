@@ -1,0 +1,87 @@
+#!/bin/bash
+# -----------------------------------------------------------------
+# MyRA Drupal Install File
+#
+# Installs the Drupal instance of MyRA and enables all
+# required modules and configures those modules settings
+#
+# (c) 2008-2010 MyRA Project, Health Sciences IT, University of Utah
+# Contact: Dr. Scott Narus <scott.narus@hsc.utah.edu>
+# Biomedical Informatics, 26 South 2000 East
+# Room 5775 HSEB, Salt Lake City, UT 84112
+# Day Phone: 1-801-213-3288
+#
+# @author     N. Dustin Schultz <dustin.schultz@utah.edu>
+# @version    Apr 11, 2011
+#
+# ------------------------------------------------------------------
+
+# Ensure Drush is installed
+type -P drush &>/dev/null || { echo "Drush is required but it's not installed.  Aborting." >&2; exit 1; }
+
+# Ensure Drush Make is installed
+if [ ! -d ~/.drush/drush_make ]; then
+    echo "Drush Make is required but it's not installed.  Aborting." >&2; exit 1;
+fi
+
+# Download MyRA and all its modules & change to its dir when done
+cp -R myra-drupal drupal
+cd drupal
+drush -y make ../MyRA.make
+
+# Read the database username and password
+read -p "Please enter the database username: " username
+read -s -p "Please enter the database password: " password
+printf "\n"
+
+db_host="localhost"
+read -p "Please enter the database hostname [$db_host]: " input
+db_host="${input:-$db_host}"
+
+db_name="myra"
+read -p "Please enter the name of the database [$db_name]: " input
+db_name="${input:-$db_name}"
+
+alf_username="admin"
+read -p "Please enter the Alfresco CMIS username [$alf_username]: " input
+alf_username="${input:-$alf_username}"
+
+alf_password="admin"
+read -s -p "Please enter the Alfresco CMIS password [$alf_password]: " input
+alf_password="${input:-$alf_password}"
+printf "\n"
+
+alf_cmis_url="http://localhost:8080/alfresco/service/cmis"
+read -p "Please enter the Alfresco CMIS URL [$alf_cmis_url]: " input
+alf_cmis_url="${input:-$alf_cmis_url}"
+
+alf_path="/"
+read -p "Please enter the Alfresco CMIS Path [$alf_path]: " input
+alf_path="${input:-$alf_path}"
+
+# Replace the database, username, password, and hostname config in the rc file
+sed -i 's/username/'$username'/g' drushrc.php
+sed -i 's/password/'$password'/g' drushrc.php
+sed -i 's/hostname/'$db_host'/g' drushrc.php
+sed -i 's/database/'$db_name'/g' drushrc.php
+
+# Replace the username/pass/url in cmis_settings
+sed -i 's/alf_username/'$alf_username'/g' cmis_settings.php
+sed -i 's/alf_password/'$alf_password'/g' cmis_settings.php
+# uses commas instead of slashes to avoid escaping slashes
+sed -i 's,alf_URL,'$alf_cmis_url',g' cmis_settings.php
+sed -i "s,alf_cmis_path,$alf_path,g" cmis_settings.php
+printf "\n"
+
+# Install Drupal with the drushrc configuration
+drush -y site-install --config=drushrc.php
+
+# Install MyRA modules
+drush -y en cmis cmis_browser cmis_common cmis_dev cmis_field cmis_headerswing cmis_query cmis_sync views views_ui ctools uuid node_export
+
+# Configure CMIS settings
+drush php-script cmis_settings
+
+# Remove drushrc and cmis_settings
+rm drushrc.php
+rm cmis_settings.php

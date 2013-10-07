@@ -1,0 +1,6 @@
+[submodule "myra-drupal"]
+	path = myra-drupal
+	url = https://github.com/uofumyra/myra-drupal.git
+[submodule "myra-alfresco"]
+	path = myra-alfresco
+	url = https://github.com/uofumyra/myra-alfresco.git 

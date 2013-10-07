@@ -1,0 +1,96 @@
+# -----------------------------------------------------------------
+# MyRA 2.0 INSTALL instructions 
+#
+# (c) 2008-2010 MyRA Project, Health Sciences IT, University of Utah
+# Contact: Dr. Scott Narus <scott.narus@hsc.utah.edu>
+# Biomedical Informatics, 26 South 2000 East
+# Room 5775 HSEB, Salt Lake City, UT 84112
+# Day Phone: 1-801-213-3288
+#
+# @author     N. Dustin Schultz <dustin.schultz@utah.edu>
+# @version    Jun 1, 2011
+#
+# ------------------------------------------------------------------
+
+Supported OSes
+=====================================
+The following Operating Systems are currently supported
+   
+   * Linux x86_64
+
+Recommended Architecture
+=====================================
+We recommend a tiered architecture consisting of 3 servers, although
+the installation will work perfectly fine on a single machine
+
+   * A database server (MySQL)
+   * A repository server (Alfresco)
+   * A web server (Drupal)
+
+Requirements
+=====================================
+The following are required in order to start the installation
+process of MyRA
+
+   * Java JDK 1.6+
+   * Apache Maven 3.0+
+   * Apache Web Server 2.2.17+
+   * MySQL 5.5.8+
+   * PHP 5.3.5+
+   * Drush 7.x-4.4+
+   * Drush Make 6.x-2.2+
+
+1. Database
+====================================
+Create a username and database for both Alfresco and Drupal
+
+mysql> create database alfresco;
+mysql> create user 'alfresco'@'localhost' identified by 'A_STRONG_PASSWORD';
+mysql> grant all on alfresco.* to 'alfresco'@'localhost' identified by 'A_STRONG_PASSWORD';
+
+mysql> create database drupal;
+mysql> create user 'drupal'@'localhost' identified by 'A_STRONG_PASSWORD';
+mysql> grant all on drupal.* to 'drupal'@'localhost' identified by 'A_STRONG_PASSWORD';
+
+2. Alfresco
+====================================
+Execute the Alfresco installer within the repository
+server and follow the prompts
+
+nobody@repository:~/$ ./myra.alfresco.install
+
+Copy the final folder where you installed alfresco to a standard
+location.
+
+For security purposes, you may want to create an additional
+user to run Alfresco.
+
+To start Alfresco, execute ./alfresco.sh start within the Alfresco
+directory
+
+3. Drupal
+====================================
+Execute the Drupal installer within the web server
+environment and follow the prompts
+
+nobody@webserver:~/$ ./myra.drupal.install
+
+Copy the contents of the drupal directory to the root
+of your Apache server (typically /var/www/html, htdocs, or public_html)
+
+4. Content
+====================================
+Since the MyRA Drupal front end is backed by an Alfresco backend
+we need to start the Alfresco repository server before we can add
+content to the Drupal front end. Otherwise, we won't benefit from
+the advantages that Alfresco brings us.
+
+   * Navigate to where you've installed Alfresco and execute ./alfresco.sh start
+
+NOTE: Be patient, Alfresco may take a few minutes for the initial start up
+
+   * Navigate to where you've installed Drupal and execute drush ne-import /path/to/myra_content.php
+
+5. Final Notes
+===================================
+None
